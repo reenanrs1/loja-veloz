@@ -1,0 +1,115 @@
+networks:
+  loja-veloz-net:
+    driver: bridge
+    name: loja-veloz-net
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: loja-veloz-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: loja_veloz
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: devpassword
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devuser -d loja_veloz"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - loja-veloz-net
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api-gateway:
+    build:
+      context: ./apps/api-gateway
+      dockerfile: Dockerfile
+    container_name: loja-veloz-api-gateway
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: 8000
+      PEDIDOS_SERVICE_URL: http://pedidos-service:3000
+      PAGAMENTOS_SERVICE_URL: http://pagamentos-service:3001
+      ESTOQUE_SERVICE_URL: http://estoque-service:3002
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8000/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      pedidos-service:
+        condition: service_healthy
+      pagamentos-service:
+        condition: service_healthy
+      estoque-service:
+        condition: service_healthy
+    networks:
+      - loja-veloz-net
+
+  pedidos-service:
+    build:
+      context: ./apps/pedidos-service
+      dockerfile: Dockerfile
+    container_name: loja-veloz-pedidos-service
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgres://devuser:devpassword@postgres:5432/loja_veloz
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - loja-veloz-net
+
+  pagamentos-service:
+    build:
+      context: ./apps/pagamentos-service
+      dockerfile: Dockerfile
+    container_name: loja-veloz-pagamentos-service
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3001/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - loja-veloz-net
+
+  estoque-service:
+    build:
+      context: ./apps/estoque-service
+      dockerfile: Dockerfile
+    container_name: loja-veloz-estoque-service
+    restart: always
+    ports:
+      - "3002:3002"
+    environment:
+      PORT: 3002
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3002/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - loja-veloz-net
+
+volumes:
+  postgres_data:
+    driver: local

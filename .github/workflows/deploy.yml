@@ -1,0 +1,98 @@
+name: CI/CD Pipeline - Loja Veloz
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint-and-test:
+    name: 🧪 Lint e Testes Unitarios
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Testes em api-gateway
+        run: |
+          cd apps/api-gateway
+          npm ci
+          npm test
+
+      - name: Testes em pedidos-service
+        run: |
+          cd apps/pedidos-service
+          npm ci
+          npm test
+
+      - name: Testes em pagamentos-service
+        run: |
+          cd apps/pagamentos-service
+          npm ci
+          npm test
+
+      - name: Testes em estoque-service
+        run: |
+          cd apps/estoque-service
+          npm ci
+          npm test
+
+  validate-k8s-and-docker:
+    name: 🐳 Docker Build & K8s Validation
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build imagem api-gateway
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/api-gateway
+          push: false
+          tags: loja-veloz/api-gateway:${{ github.sha }}
+
+      - name: Build imagem pedidos-service
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/pedidos-service
+          push: false
+          tags: loja-veloz/pedidos-service:${{ github.sha }}
+
+      - name: Build imagem pagamentos-service
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/pagamentos-service
+          push: false
+          tags: loja-veloz/pagamentos-service:${{ github.sha }}
+
+      - name: Build imagem estoque-service
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/estoque-service
+          push: false
+          tags: loja-veloz/estoque-service:${{ github.sha }}
+
+      - name: Validar Sintaxe dos Manifestos K8s
+        run: |
+          python3 -c "
+          import yaml, glob
+          files = sorted(glob.glob('k8s/base/*.yaml'))
+          for f in files:
+              with open(f, 'r') as stream:
+                  list(yaml.safe_load_all(stream))
+              print(f'✅ Manifesto valido: {f}')
+          print('Todos os manifestos do Kubernetes estao 100% validos!')
+          "

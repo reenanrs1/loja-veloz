@@ -1,0 +1,14 @@
+{
+  "name": "pagamentos-service",
+  "version": "1.0.0",
+  "description": "Serviço de Pagamentos para a plataforma Loja Veloz",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test/pagamentos.test.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "prom-client": "^15.1.0"
+  }
+}

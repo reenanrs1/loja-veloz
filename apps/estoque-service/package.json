@@ -1,0 +1,14 @@
+{
+  "name": "estoque-service",
+  "version": "1.0.0",
+  "description": "Serviço de Estoque para a plataforma Loja Veloz",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test/estoque.test.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "prom-client": "^15.1.0"
+  }
+}
