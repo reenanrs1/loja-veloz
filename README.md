@@ -8,7 +8,7 @@ Este projeto moderniza a infraestrutura de e-commerce, migrando de instâncias i
 
 ## 📽️ Vídeo de Apresentação (Pitch de 4 Minutos)
 
-- **Link do Vídeo no YouTube:** ``
+- **Link do Vídeo no YouTube:** `https://youtu.be/G6Jm2hNczJU`
 
 ---
 
